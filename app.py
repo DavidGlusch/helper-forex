@@ -9,7 +9,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 FILE_NAME = os.getenv("FILE_NAME")
 
 
-def read_faq_data(file_name: str) -> dict:
+def read_json_file(file_name: str) -> dict:
     """
     Reads and returns the FAQ data from a JSON file.
 
