@@ -15,13 +15,13 @@ nltk.download("punkt")
 
 def read_json_file(file_name: str) -> dict:
     """
-    Reads and returns the FAQ data from a JSON file.
+    Reads and returns the data from a JSON file.
 
     Args:
         file_name (str): The name of the JSON file.
 
     Returns:
-        dict: The loaded FAQ data from the JSON file.
+        dict: The loaded data from the JSON file.
     """
     with open(file_name, "r", encoding="utf-8") as file:
         data = json.load(file)
@@ -34,7 +34,7 @@ def get_openai_response(question: str, data: dict) -> str:
 
     Args:
         question (str): The user's question.
-        data (dict): The FAQ data.
+        data (dict): The data.
 
     Returns:
         str: The generated response from the OpenAI API.
@@ -80,11 +80,11 @@ def index() -> str | Response:
 def generate_prompt(question: str, data: dict) -> str:
     """
     Generates the prompt for the OpenAI API based on
-    the provided user question and FAQ data.
+    the provided user question and data.
 
     Args:
         question (str): The user's question.
-        data (dict): The FAQ data.
+        data (dict): The data.
 
     Returns:
         str: The generated prompt for the OpenAI API.
@@ -96,12 +96,14 @@ def generate_prompt(question: str, data: dict) -> str:
     similarities = get_similar_questions(chunks, question)
     best_fitting_question = get_best_fitting_question(similarities, chunks)
 
-    for faq_item in data:
-        question_alternatives = faq_item["Question_original_alternatives"]
-        question_short_alternatives = faq_item["Question_short_alternatives"]
-        if best_fitting_question in question_alternatives or best_fitting_question in question_short_alternatives:
-            notes += faq_item["Notes"]
-            answer += faq_item["Answer_plain_text"]
+    for item in data:
+        question_alternatives = item["Question_original_alternatives"]
+        question_short_alternatives = item["Question_short_alternatives"]
+
+        if (best_fitting_question in question_alternatives
+                or best_fitting_question in question_short_alternatives):
+            notes += item["Notes"]
+            answer += item["Answer_plain_text"]
             break
 
     prompt = (f"You are a Helper for Forex Tester\n "

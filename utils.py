@@ -13,18 +13,19 @@ def get_chunks(data: dict) -> list:
         list: The list of question alternatives.
     """
     chunks = []
-    for faq_item in data:
-        question_alternatives = faq_item["Question_original_alternatives"]
+    for item in data:
+        question_alternatives = item["Question_original_alternatives"]
         chunks.extend(question_alternatives)
 
-        question_short_alternatives = faq_item["Question_short_alternatives"]
+        question_short_alternatives = item["Question_short_alternatives"]
         chunks.extend(question_short_alternatives)
     return chunks
 
 
 def get_similar_questions(chunks: list, question: str) -> list:
     """
-    Calculates the similarity between the user's question and the question alternatives.
+    Calculates the similarity between the user's
+    question and the question alternatives.
 
     Args:
         chunks (list): The list of question alternatives.
