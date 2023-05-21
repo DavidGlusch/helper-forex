@@ -1,12 +1,16 @@
 import json
 import os
-
+import nltk
 import openai
 from flask import Flask, redirect, render_template, request, url_for, Response
+
+from utils import get_chunks, get_best_fitting_question, get_similar_questions
 
 app = Flask(__name__)
 openai.api_key = os.getenv("OPENAI_API_KEY")
 FILE_NAME = os.getenv("FILE_NAME")
+
+nltk.download("punkt")
 
 
 def read_json_file(file_name: str) -> dict:
@@ -20,8 +24,39 @@ def read_json_file(file_name: str) -> dict:
         dict: The loaded FAQ data from the JSON file.
     """
     with open(file_name, "r", encoding="utf-8") as file:
-        faq_data = json.load(file)
-    return faq_data
+        data = json.load(file)
+    return data
+
+
+def get_openai_response(question: str, data: dict) -> str:
+    """
+    Generates the OpenAI API response based on the user question.
+
+    Args:
+        question (str): The user's question.
+        data (dict): The FAQ data.
+
+    Returns:
+        str: The generated response from the OpenAI API.
+    """
+
+    response = openai.Completion.create(
+        model="text-davinci-003",
+        prompt=generate_prompt(question, data),
+        temperature=0.1,
+        max_tokens=50
+    )
+    return response.choices[0].text
+
+
+def get_data() -> dict:
+    """
+    Retrieves data from a JSON file.
+
+    Returns:
+        dict: The data from the JSON file.
+    """
+    return read_json_file(FILE_NAME)
 
 
 @app.route("/", methods=("GET", "POST"))
@@ -32,38 +67,46 @@ def index() -> str | Response:
     Returns:
         str: The rendered template with the result if available.
     """
-    faq_data = read_faq_data(FILE_NAME)
 
     if request.method == "POST":
         question = request.form["question"]
-        response = openai.Completion.create(
-            model="text-davinci-003",
-            prompt=generate_prompt(question, faq_data),
-            temperature=1,
-            max_tokens=50,  # Tune this parameter for a more descriptive
-                            # output, more tokens means higher price
-        )
-        return redirect(url_for("index", result=response.choices[0].text))
+        result = get_openai_response(question, get_data())
+        return redirect(url_for("index", result=result))
 
     result = request.args.get("result")
     return render_template("index.html", result=result)
 
 
-def generate_prompt(question: str, faq_data: dict) -> str:
+def generate_prompt(question: str, data: dict) -> str:
     """
     Generates the prompt for the OpenAI API based on
     the provided user question and FAQ data.
 
     Args:
         question (str): The user's question.
-        faq_data (dict): The FAQ data.
+        data (dict): The FAQ data.
 
     Returns:
         str: The generated prompt for the OpenAI API.
     """
-    prompt = ""
-    for faq_item in faq_data:
-        original_question = faq_item["Question_original"]
-        prompt += f"Question: {original_question}\n\n"
-    prompt += f"User Question: {question}\n\n"
+
+    answer = ""
+    notes = ""
+    chunks = get_chunks(data)
+    similarities = get_similar_questions(chunks, question)
+    best_fitting_question = get_best_fitting_question(similarities, chunks)
+
+    for faq_item in data:
+        question_alternatives = faq_item["Question_original_alternatives"]
+        question_short_alternatives = faq_item["Question_short_alternatives"]
+        if best_fitting_question in question_alternatives or best_fitting_question in question_short_alternatives:
+            notes += faq_item["Notes"]
+            answer += faq_item["Answer_plain_text"]
+            break
+
+    prompt = (f"You are a Helper for Forex Tester\n "
+              f"User question: f{best_fitting_question}\n"
+              f"{notes}\n")
+    # f"ANSWER EXAMPLE:{answer}")
+
     return prompt
