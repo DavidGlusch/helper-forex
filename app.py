@@ -33,20 +33,23 @@ def get_openai_response(question: str, data: dict) -> str:
     Generates the OpenAI API response based on the user question.
 
     Args:
-        question (str): The user's question.
+        question (str): The user"s question.
         data (dict): The data.
 
     Returns:
         str: The generated response from the OpenAI API.
     """
+    prompt = generate_prompt(question, data)
 
-    response = openai.Completion.create(
-        model="text-davinci-003",
-        prompt=generate_prompt(question, data),
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=256,
+        n=1,
         temperature=0.1,
-        max_tokens=50
-    )
-    return response.choices[0].text
+    ).get("choices")[0]["message"]["content"]
+
+    return response
 
 
 def get_data() -> dict:
@@ -83,13 +86,14 @@ def generate_prompt(question: str, data: dict) -> str:
     the provided user question and data.
 
     Args:
-        question (str): The user's question.
+        question (str): The user"s question.
         data (dict): The data.
 
     Returns:
         str: The generated prompt for the OpenAI API.
     """
     notes = ""
+    answer = ""
     chunks = get_chunks(data)
     similarities = get_similar_questions(chunks, question)
     best_fitting_question = get_best_fitting_question(similarities, chunks)
@@ -101,10 +105,11 @@ def generate_prompt(question: str, data: dict) -> str:
         if (best_fitting_question in question_alternatives
                 or best_fitting_question in question_short_alternatives):
             notes += item["Notes"]
+            answer += item["Answer_plain_text"]
             break
 
-    prompt = (f"You are a Helper for Forex Tester\n "
-              f"User question: f{best_fitting_question}\n"
-              f"{notes}\n")
-
+    prompt = (f"Act like a Helper for Forex Tester, I'll give you a question from user and you will give me "
+              f"the answer."
+              f"your answer should be this: {answer}. Consider notes: {notes}"
+              f"User question: {best_fitting_question}")
     return prompt
