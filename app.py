@@ -89,8 +89,6 @@ def generate_prompt(question: str, data: dict) -> str:
     Returns:
         str: The generated prompt for the OpenAI API.
     """
-
-    answer = ""
     notes = ""
     chunks = get_chunks(data)
     similarities = get_similar_questions(chunks, question)
@@ -103,7 +101,6 @@ def generate_prompt(question: str, data: dict) -> str:
         if (best_fitting_question in question_alternatives
                 or best_fitting_question in question_short_alternatives):
             notes += item["Notes"]
-            answer += item["Answer_plain_text"]
             break
 
     prompt = (f"You are a Helper for Forex Tester\n "
