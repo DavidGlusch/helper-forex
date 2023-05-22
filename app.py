@@ -109,6 +109,5 @@ def generate_prompt(question: str, data: dict) -> str:
     prompt = (f"You are a Helper for Forex Tester\n "
               f"User question: f{best_fitting_question}\n"
               f"{notes}\n")
-    # f"ANSWER EXAMPLE:{answer}")
 
     return prompt
